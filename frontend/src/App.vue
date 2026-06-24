@@ -6,13 +6,18 @@
           <h2>人才绩效管理系统</h2>
         </div>
         <div class="header-right">
+          <el-button text @click="toggleTheme" style="color: var(--text-secondary);">
+            <el-icon :size="18">
+              <component :is="isDark ? Sunny : Moon" />
+            </el-icon>
+          </el-button>
           <span>admin</span>
           <el-button type="danger" text @click="logout">退出</el-button>
         </div>
       </el-header>
       <el-container>
         <el-aside width="200px" class="app-aside">
-          <el-menu :default-active="currentRoute" router background-color="#f5f7fa" :default-openeds="['1','2','3']">
+          <el-menu :default-active="currentRoute" router :default-openeds="['1','2','3']">
             <el-sub-menu index="1">
               <template #title><el-icon><UserFilled /></el-icon> 人才管理</template>
               <el-menu-item index="/talent/list">人才列表</el-menu-item>
@@ -38,12 +43,41 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { Sunny, Moon } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const currentRoute = computed(() => route.path)
+
+const isDark = ref(true)
+
+function initTheme() {
+  const saved = localStorage.getItem('theme')
+  if (saved === 'light') {
+    isDark.value = false
+    document.documentElement.dataset.theme = 'light'
+  } else {
+    isDark.value = true
+    document.documentElement.dataset.theme = ''
+  }
+}
+
+function toggleTheme() {
+  isDark.value = !isDark.value
+  if (isDark.value) {
+    document.documentElement.dataset.theme = ''
+    localStorage.setItem('theme', 'dark')
+  } else {
+    document.documentElement.dataset.theme = 'light'
+    localStorage.setItem('theme', 'light')
+  }
+}
+
+onMounted(() => {
+  initTheme()
+})
 
 function logout() {
   localStorage.removeItem('token')
@@ -52,19 +86,7 @@ function logout() {
 </script>
 
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+/* 仅保留 theme.css 未覆盖的布局样式 */
 html, body, #app, #app-container { height: 100%; }
-.app-header {
-  background: #409eff;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  height: 56px;
-}
-.app-header h2 { font-size: 18px; }
-.header-right { display: flex; align-items: center; gap: 12px; }
-.app-aside { border-right: 1px solid #e4e7ed; min-height: calc(100vh - 56px); }
-.app-main { background: #f0f2f5; padding: 20px; }
+.el-container { height: 100%; }
 </style>

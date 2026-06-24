@@ -249,7 +249,7 @@ defineExpose({ validateFormula, validateResult })
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border-right: 1px solid #e4e7ed;
+  border-right: 1px solid var(--border-glow, rgba(0, 212, 255, 0.25));
   padding-right: 16px;
 }
 
@@ -262,7 +262,7 @@ defineExpose({ validateFormula, validateResult })
 .fe-label {
   font-size: 13px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-secondary, #94a3b8);
 }
 
 .fe-attr-list {
@@ -275,33 +275,34 @@ defineExpose({ validateFormula, validateResult })
 
 .fe-attr-item {
   padding: 6px 8px;
-  background: #fff;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-glow, rgba(0, 212, 255, 0.25));
+  border-radius: 6px;
   cursor: grab;
   user-select: none;
-  transition: all 0.15s;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 .fe-attr-item:hover {
-  background: #ecf5ff;
-  border-color: #409eff;
+  background: rgba(0, 212, 255, 0.1);
+  border-color: var(--accent-cyan, #00d4ff);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.15);
 }
 .fe-attr-name {
   font-size: 13px;
-  color: #303133;
+  color: var(--text-primary, #e2e8f0);
 }
 .fe-attr-code {
   font-size: 11px;
-  color: #909399;
+  color: var(--text-muted, #64748b);
   font-family: monospace;
 }
 
 .fe-empty {
   font-size: 12px;
-  color: #c0c4cc;
+  color: var(--text-muted, #64748b);
   text-align: center;
   padding: 12px 0;
 }
@@ -315,35 +316,37 @@ defineExpose({ validateFormula, validateResult })
 .fe-op-btn {
   width: 36px;
   height: 32px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  background: #fff;
+  border: 1px solid var(--border-glow, rgba(0, 212, 255, 0.25));
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
-  transition: all 0.15s;
+  color: var(--text-primary, #e2e8f0);
+  transition: all 0.2s;
 }
 .fe-op-btn:hover {
-  background: #f0f9eb;
-  border-color: #67c23a;
-  color: #67c23a;
+  background: rgba(0, 212, 255, 0.12);
+  border-color: var(--accent-cyan, #00d4ff);
+  color: var(--accent-cyan, #00d4ff);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
 }
 
 .fe-fn-btn {
   padding: 4px 8px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  background: #f5efff;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 6px;
+  background: rgba(168, 85, 247, 0.1);
   cursor: pointer;
   font-size: 12px;
-  color: #8b5cf6;
-  transition: all 0.15s;
+  color: var(--accent-purple, #a855f7);
+  transition: all 0.2s;
   white-space: nowrap;
 }
 .fe-fn-btn:hover {
-  background: #ede9fe;
-  border-color: #8b5cf6;
+  background: rgba(168, 85, 247, 0.2);
+  border-color: var(--accent-purple, #a855f7);
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.2);
 }
 
 /* 右侧主区域 */
@@ -363,7 +366,7 @@ defineExpose({ validateFormula, validateResult })
 
 .fe-toolbar-title {
   font-size: 13px;
-  color: #606266;
+  color: var(--text-secondary, #94a3b8);
 }
 
 .fe-toolbar-actions {
@@ -381,34 +384,39 @@ defineExpose({ validateFormula, validateResult })
   height: 100%;
   min-height: 180px;
   padding: 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
+  border: 1px solid var(--border-glow, rgba(0, 212, 255, 0.25));
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--accent-cyan, #00d4ff);
   font-size: 14px;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   line-height: 1.6;
   resize: vertical;
   box-sizing: border-box;
-  transition: border-color 0.15s;
+  transition: border-color 0.2s;
+}
+.fe-textarea::placeholder {
+  color: var(--text-muted, #64748b);
 }
 .fe-textarea:focus {
   outline: none;
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64,158,255,0.15);
+  border-color: var(--accent-cyan, #00d4ff);
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.15);
 }
 
 .fe-validate-msg {
   padding: 8px 12px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 13px;
 }
 .fe-success {
-  background: #f0f9eb;
-  color: #67c23a;
-  border: 1px solid #e1f3d8;
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
 }
 .fe-error {
-  background: #fef0f0;
-  color: #f56c6c;
-  border: 1px solid #fde2e2;
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 </style>

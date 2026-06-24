@@ -3,6 +3,8 @@ package com.talent.init;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.talent.entity.*;
 import com.talent.mapper.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -12,10 +14,18 @@ import java.time.LocalDate;
 import java.util.*;
 
 /**
- * 初始化数据库表结构并生成测试数据
+ * 数据初始化器
+ * <p>
+ * 应用启动时自动初始化管理员用户、指标定义、测试人才数据、筛选方案和评分方案。
+ * 仅在数据库为空时执行（管理员用户除外，每次启动都检查）。
+ * </p>
+ *
+ * @author talent-hr
  */
 @Component
 public class DataInitializer implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     private final TalentAttributeMapper attrMapper;
     private final TalentMapper talentMapper;
@@ -27,6 +37,19 @@ public class DataInitializer implements CommandLineRunner {
     private final SysUserMapper sysUserMapper;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * 构造方法
+     *
+     * @param attrMapper         指标 Mapper
+     * @param talentMapper       人才 Mapper
+     * @param valueMapper        指标值 Mapper
+     * @param planMapper         筛选方案 Mapper
+     * @param condMapper         筛选条件 Mapper
+     * @param scoringPlanMapper  评分方案 Mapper
+     * @param scoreMapper        评分记录 Mapper
+     * @param sysUserMapper      用户 Mapper
+     * @param passwordEncoder    密码编码器
+     */
     public DataInitializer(TalentAttributeMapper attrMapper, TalentMapper talentMapper,
                            TalentAttrValueMapper valueMapper, ScreeningPlanMapper planMapper,
                            SelectionConditionMapper condMapper, ScoringPlanMapper scoringPlanMapper,
@@ -46,28 +69,39 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        // admin 用户始终检查并初始化
+        // 管理员用户始终检查并初始化
         initAdminUser();
 
-        if (attrMapper.selectCount(null) > 0) return;
-        System.out.println("=== 初始化数据 ===");
+        if (attrMapper.selectCount(null) > 0) {
+            return;
+        }
+        log.info("===== 开始初始化数据 =====");
         initAttributes();
         initTalents();
         initScreeningPlans();
         initScoringPlan();
+        log.info("===== 数据初始化完成 =====");
     }
 
+    /**
+     * 初始化管理员用户
+     */
     private void initAdminUser() {
-        if (sysUserMapper.selectCount(null) > 0) return;
+        if (sysUserMapper.selectCount(null) > 0) {
+            return;
+        }
         SysUser admin = new SysUser();
         admin.setUsername("admin");
         admin.setPassword(passwordEncoder.encode("admin123"));
         admin.setRealName("系统管理员");
         admin.setStatus(1);
         sysUserMapper.insert(admin);
-        System.out.println("管理员用户已初始化: admin / admin123");
+        log.info("管理员用户已初始化: admin / admin123");
     }
 
+    /**
+     * 初始化指标定义
+     */
     private void initAttributes() {
         List<TalentAttribute> attrs = new ArrayList<>();
 
@@ -91,9 +125,24 @@ public class DataInitializer implements CommandLineRunner {
         attrs.add(buildAttr("manage_years", "管理年限", "NUMBER", "年", null, null, 5, 1, 0, 9));
 
         attrs.forEach(attrMapper::insert);
-        System.out.println("指标数据已初始化: " + attrs.size() + " 个");
+        log.info("指标数据已初始化: {} 个", attrs.size());
     }
 
+    /**
+     * 构建指标实体
+     *
+     * @param code         指标编码
+     * @param name         指标名称
+     * @param type         数据类型
+     * @param unit         单位
+     * @param optionsJson  枚举选项 JSON
+     * @param scoreMapping 分值映射 JSON
+     * @param weight       权重
+     * @param direction    方向（1 越高越好，-1 越低越好）
+     * @param required     是否必填（0 否，1 是）
+     * @param sortOrder    排序序号
+     * @return 指标实体
+     */
     private TalentAttribute buildAttr(String code, String name, String type, String unit,
                                        String optionsJson, String scoreMapping,
                                        int weight, int direction, int required, int sortOrder) {
@@ -112,6 +161,9 @@ public class DataInitializer implements CommandLineRunner {
         return attr;
     }
 
+    /**
+     * 初始化测试人才数据
+     */
     private void initTalents() {
         String[][] rawTalents = {
             {"张伟", "男", "1990-03-15", "技术部", "高级工程师", "zhangwei@hr.com", "13800001001", "硕士", "8", "175", "CET-6", "北京", "A", "34", "3", "2"},
@@ -136,43 +188,47 @@ public class DataInitializer implements CommandLineRunner {
             {"彭慧", "女", "1991-01-19", "产品部", "产品总监", "penghui@hr.com", "13800001020", "硕士", "9", "162", "CET-6", "北京", "A", "34", "5", "5"},
         };
 
-        // attr id map: code → id
+        // 构建指标 code -> id 映射
         List<TalentAttribute> allAttrs = attrMapper.selectList(
                 new LambdaQueryWrapper<TalentAttribute>().eq(TalentAttribute::getStatus, 1));
         Map<String, Long> attrMap = new LinkedHashMap<>();
-        for (TalentAttribute a : allAttrs) attrMap.put(a.getCode(), a.getId());
+        for (TalentAttribute a : allAttrs) {
+            attrMap.put(a.getCode(), a.getId());
+        }
 
-        int idx = 0;
         for (String[] row : rawTalents) {
             Talent t = new Talent();
-            t.setName(row[0]); t.setGender(row[1]);
-            t.setBirthDate(LocalDate.parse(row[2])); t.setDept(row[3]);
-            t.setPosition(row[4]); t.setEmail(row[5]); t.setPhone(row[6]);
+            t.setName(row[0]);
+            t.setGender(row[1]);
+            t.setBirthDate(LocalDate.parse(row[2]));
+            t.setDept(row[3]);
+            t.setPosition(row[4]);
+            t.setEmail(row[5]);
+            t.setPhone(row[6]);
             t.setStatus(1);
             talentMapper.insert(t);
 
-            // 学历 (index 7)
+            // 保存各指标值（索引 7~15 对应 9 个指标）
             saveValue(t.getId(), attrMap.get("education"), row[7]);
-            // 工作年限 (index 8)
             saveValue(t.getId(), attrMap.get("work_years"), row[8]);
-            // 身高 (index 9)
             saveValue(t.getId(), attrMap.get("height"), row[9]);
-            // 英语水平 (index 10)
             saveValue(t.getId(), attrMap.get("english_level"), row[10]);
-            // 籍贯 (index 11)
             saveValue(t.getId(), attrMap.get("hometown"), row[11]);
-            // 绩效 (index 12)
             saveValue(t.getId(), attrMap.get("perf_rating"), row[12]);
-            // 年龄 (index 13)
             saveValue(t.getId(), attrMap.get("age"), row[13]);
-            // 资格证书数 (index 14)
             saveValue(t.getId(), attrMap.get("cert_count"), row[14]);
-            // 管理年限 (index 15)
             saveValue(t.getId(), attrMap.get("manage_years"), row[15]);
         }
-        System.out.println("人才数据已初始化: " + rawTalents.length + " 人");
+        log.info("人才数据已初始化: {} 人", rawTalents.length);
     }
 
+    /**
+     * 保存单条指标值
+     *
+     * @param talentId 人才 ID
+     * @param attrId   指标 ID
+     * @param value    指标值
+     */
     private void saveValue(Long talentId, Long attrId, String value) {
         TalentAttrValue v = new TalentAttrValue();
         v.setTalentId(talentId);
@@ -181,13 +237,18 @@ public class DataInitializer implements CommandLineRunner {
         valueMapper.insert(v);
     }
 
+    /**
+     * 初始化筛选方案
+     */
     private void initScreeningPlans() {
-        // 根据指标名查ID
+        // 构建指标 code -> id 映射
         List<TalentAttribute> allAttrs = attrMapper.selectList(null);
         Map<String, Long> am = new HashMap<>();
-        for (TalentAttribute a : allAttrs) am.put(a.getCode(), a.getId());
+        for (TalentAttribute a : allAttrs) {
+            am.put(a.getCode(), a.getId());
+        }
 
-        // 方案1：高级技术人才筛选 (AND)
+        // 方案1：高级技术人才筛选（AND 逻辑）
         ScreeningPlan p1 = new ScreeningPlan();
         p1.setName("高级技术人才筛选");
         p1.setDescription("学历硕士及以上 + 工作年限>=8 + 绩效A及以上");
@@ -199,7 +260,7 @@ public class DataInitializer implements CommandLineRunner {
         condMapper.insert(buildCond(p1.getId(), "工作年限>=8", am.get("work_years"), "GTE", "8", 2));
         condMapper.insert(buildCond(p1.getId(), "绩效>=A", am.get("perf_rating"), "IN", "S,A", 3));
 
-        // 方案2：年轻骨干筛选 (AND)
+        // 方案2：年轻骨干筛选（AND 逻辑）
         ScreeningPlan p2 = new ScreeningPlan();
         p2.setName("年轻骨干筛选");
         p2.setDescription("年龄<=35 + 工作年限>=5 + 本科及以上 + 绩效B及以上");
@@ -212,7 +273,7 @@ public class DataInitializer implements CommandLineRunner {
         condMapper.insert(buildCond(p2.getId(), "学历>=本科", am.get("education"), "IN", "博士,硕士,本科", 3));
         condMapper.insert(buildCond(p2.getId(), "绩效>=B", am.get("perf_rating"), "IN", "S,A,B", 4));
 
-        // 方案3：高学历或高绩效 (OR)
+        // 方案3：高学历或高绩效（OR 逻辑）
         ScreeningPlan p3 = new ScreeningPlan();
         p3.setName("高学历或高绩效");
         p3.setDescription("博士学历 或 绩效=S");
@@ -223,9 +284,20 @@ public class DataInitializer implements CommandLineRunner {
         condMapper.insert(buildCond(p3.getId(), "博士学历", am.get("education"), "EQ", "博士", 1));
         condMapper.insert(buildCond(p3.getId(), "绩效=S", am.get("perf_rating"), "EQ", "S", 2));
 
-        System.out.println("筛选方案已初始化: 3 个");
+        log.info("筛选方案已初始化: 3 个");
     }
 
+    /**
+     * 构建筛选条件实体
+     *
+     * @param planId   方案 ID
+     * @param name     条件名称
+     * @param attrId   指标 ID
+     * @param operator 操作符
+     * @param value    比较值
+     * @param sort     排序序号
+     * @return 条件实体
+     */
     private SelectionCondition buildCond(Long planId, String name, Long attrId,
                                           String operator, String value, int sort) {
         SelectionCondition c = new SelectionCondition();
@@ -238,6 +310,9 @@ public class DataInitializer implements CommandLineRunner {
         return c;
     }
 
+    /**
+     * 初始化评分方案
+     */
     private void initScoringPlan() {
         ScoringPlan sp = new ScoringPlan();
         sp.setName("综合能力评分");
@@ -245,6 +320,6 @@ public class DataInitializer implements CommandLineRunner {
         sp.setExpression("education * 0.25 + work_years * 0.20 + perf_rating * 0.20 + english_level * 0.10 + manage_years * 0.05 + cert_count * 0.05 + age * 0.05 + height * 0.05 + hometown * 0.05");
         sp.setStatus(1);
         scoringPlanMapper.insert(sp);
-        System.out.println("评分方案已初始化: 1 个");
+        log.info("评分方案已初始化: 1 个");
     }
 }

@@ -14,6 +14,11 @@ import java.util.stream.Collectors;
 
 /**
  * 表达式管理接口
+ * <p>
+ * 提供评分公式的语法校验和变量合法性校验。
+ * </p>
+ *
+ * @author talent-hr
  */
 @RestController
 @RequestMapping("/api/expression")
@@ -21,19 +26,29 @@ public class ExpressionController {
 
     private final TalentAttributeMapper attrMapper;
 
+    /**
+     * 构造方法
+     *
+     * @param attrMapper 指标 Mapper
+     */
     public ExpressionController(TalentAttributeMapper attrMapper) {
         this.attrMapper = attrMapper;
     }
 
     /**
      * 校验公式是否合法
-     * @param body 请求体：{ expression: "公式字符串" }
+     * <p>
+     * 校验步骤：1. 基础语法校验 2. 变量合法性校验（变量必须为已存在的指标 code）
+     * </p>
+     *
+     * @param body 请求体（expression: 公式字符串）
+     * @return 校验结果（valid: 是否合法, message: 提示信息）
      */
     @PostMapping("/validate")
     public R<Map<String, Object>> validate(@RequestBody Map<String, String> body) {
         String expr = body.get("expression");
         Map<String, Object> result = new HashMap<>();
-        
+
         if (expr == null || expr.isBlank()) {
             result.put("valid", false);
             result.put("message", "公式不能为空");
@@ -48,9 +63,8 @@ public class ExpressionController {
             return R.ok(result);
         }
 
-        // 2. 校验公式中使用的变量是否都是已存在的指标code
+        // 2. 校验公式中使用的变量是否都是已存在的指标 code
         try {
-            // 提取表达式中的变量名（简单正则，匹配Aviator的变量规则：字母开头，包含字母、数字、下划线）
             Set<String> usedVars = extractVars(expr);
             List<TalentAttribute> attrs = attrMapper.selectList(null);
             Set<String> validCodes = attrs.stream()
@@ -78,15 +92,20 @@ public class ExpressionController {
     }
 
     /**
-     * 简单提取Aviator表达式中的变量名
-     * 匹配规则：字母开头，后接字母、数字、下划线
+     * 提取 Aviator 表达式中的变量名
+     * <p>
+     * 匹配规则：字母开头，后接字母、数字、下划线，排除 Aviator 内置常量。
+     * </p>
+     *
+     * @param expr 表达式字符串
+     * @return 变量名集合
      */
     private Set<String> extractVars(String expr) {
         return java.util.regex.Pattern.compile("\\b([a-zA-Z_][a-zA-Z0-9_]*)\\b")
                 .matcher(expr)
                 .results()
                 .map(m -> m.group(1))
-                // 排除Aviator内置常量
+                // 排除 Aviator 内置常量
                 .filter(v -> !Set.of("true", "false", "nil", "INF", "NaN").contains(v))
                 .collect(Collectors.toSet());
     }

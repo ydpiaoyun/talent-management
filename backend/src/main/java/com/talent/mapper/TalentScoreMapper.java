@@ -3,17 +3,15 @@ package com.talent.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.talent.entity.TalentScore;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
-import java.util.List;
-import java.util.Map;
-
+/**
+ * 人才评分记录 Mapper 接口
+ * <p>
+ * 仅继承 BaseMapper 的基础 CRUD 方法，复杂查询在 Service 层用 MyBatis-Plus 代码方式实现。
+ * </p>
+ *
+ * @author talent-hr
+ */
 @Mapper
 public interface TalentScoreMapper extends BaseMapper<TalentScore> {
-
-    @Select("SELECT s.talent_id, s.total_score, s.detail_json, t.name, t.dept " +
-            "FROM talent_score s JOIN talent t ON s.talent_id = t.id " +
-            "WHERE s.plan_id = #{planId} ORDER BY s.total_score DESC")
-    List<Map<String, Object>> rankingByPlan(@Param("planId") Long planId);
 }

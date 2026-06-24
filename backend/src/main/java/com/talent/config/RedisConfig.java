@@ -18,10 +18,23 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
 
+/**
+ * Redis 配置
+ * <p>
+ * 配置 RedisTemplate 和缓存管理器，使用 Jackson JSON 序列化。
+ * </p>
+ *
+ * @author talent-hr
+ */
 @Configuration
 @EnableCaching
 public class RedisConfig {
 
+    /**
+     * 创建 Jackson JSON 序列化器
+     *
+     * @return Jackson2JsonRedisSerializer 实例
+     */
     private Jackson2JsonRedisSerializer<Object> jsonSerializer() {
         ObjectMapper om = new ObjectMapper();
         om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
@@ -31,6 +44,12 @@ public class RedisConfig {
         return new Jackson2JsonRedisSerializer<>(om, Object.class);
     }
 
+    /**
+     * 配置 RedisTemplate
+     *
+     * @param factory Redis 连接工厂
+     * @return RedisTemplate 实例
+     */
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
@@ -47,6 +66,15 @@ public class RedisConfig {
         return template;
     }
 
+    /**
+     * 配置 Redis 缓存管理器
+     * <p>
+     * 默认缓存有效期 10 分钟，禁用 null 值缓存。
+     * </p>
+     *
+     * @param factory Redis 连接工厂
+     * @return RedisCacheManager 实例
+     */
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory factory) {
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()

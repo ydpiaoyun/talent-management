@@ -1,8 +1,9 @@
 <template>
-  <div class="login-page">
+  <div class="login-container">
     <el-card class="login-card">
-      <h2 style="text-align:center;margin-bottom:24px;">人才绩效管理系统</h2>
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="0">
+      <h2>人才绩效管理系统</h2>
+      <p>HR TALENT PERFORMANCE SYSTEM</p>
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="0" style="margin-top: 28px;">
         <el-form-item prop="username">
           <el-input v-model="form.username" placeholder="用户名" size="large" />
         </el-form-item>
@@ -13,7 +14,6 @@
           <el-button type="primary" size="large" style="width:100%" @click="login" :loading="loading">登 录</el-button>
         </el-form-item>
       </el-form>
-      <p style="text-align:center;color:#999;font-size:13px;">默认账号: admin / admin123</p>
     </el-card>
   </div>
 </template>
@@ -50,15 +50,5 @@ async function login() {
 </script>
 
 <style scoped>
-.login-page {
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f0f2f5;
-}
-.login-card {
-  width: 400px;
-  padding: 20px;
-}
+/* 登录页使用 theme.css 中的 .login-container / .login-card 全局样式 */
 </style>

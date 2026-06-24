@@ -10,6 +10,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * 认证接口
+ * <p>
+ * 提供用户登录认证，签发 JWT Token。
+ * </p>
+ *
+ * @author talent-hr
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -18,6 +26,13 @@ public class AuthController {
     private final SysUserMapper sysUserMapper;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * 构造方法
+     *
+     * @param jwtUtil        JWT 工具类
+     * @param sysUserMapper  用户 Mapper
+     * @param passwordEncoder 密码编码器
+     */
     public AuthController(JwtUtil jwtUtil, SysUserMapper sysUserMapper,
                           PasswordEncoder passwordEncoder) {
         this.jwtUtil = jwtUtil;
@@ -25,12 +40,18 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /**
+     * 用户登录
+     *
+     * @param body 请求体（username, password）
+     * @return 包含 Token 和用户信息的响应
+     */
     @PostMapping("/login")
     public R<Map<String, String>> login(@RequestBody Map<String, String> body) {
         String username = body.get("username");
         String password = body.get("password");
 
-        if (username == null || password == null) {
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
             return R.fail(400, "用户名和密码不能为空");
         }
 

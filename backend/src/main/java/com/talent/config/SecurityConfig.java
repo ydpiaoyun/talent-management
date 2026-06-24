@@ -31,6 +31,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Spring Security 安全配置
+ * <p>
+ * 基于 JWT 的无状态认证，配置 CORS 跨域、路由权限、JWT 过滤器。
+ * </p>
+ *
+ * @author talent-hr
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -42,10 +50,22 @@ public class SecurityConfig {
     private final SecurityContextRepository securityContextRepository =
             new RequestAttributeSecurityContextRepository();
 
+    /**
+     * 构造方法
+     *
+     * @param jwtUtil JWT 工具类
+     */
     public SecurityConfig(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
 
+    /**
+     * 配置安全过滤链
+     *
+     * @param http HttpSecurity 对象
+     * @return SecurityFilterChain 实例
+     * @throws Exception 配置异常
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -63,11 +83,21 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * 密码编码器（BCrypt）
+     *
+     * @return PasswordEncoder 实例
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * CORS 跨域配置
+     *
+     * @return CorsConfigurationSource 实例
+     */
     @Bean
     public CorsConfigurationSource corsConfigSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -80,6 +110,14 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * JWT 认证过滤器
+     * <p>
+     * 从请求头提取 Token 并校验，有效则设置认证上下文。
+     * </p>
+     *
+     * @return OncePerRequestFilter 实例
+     */
     @Bean
     public OncePerRequestFilter jwtFilter() {
         return new OncePerRequestFilter() {
@@ -88,45 +126,54 @@ public class SecurityConfig {
                                             HttpServletResponse response,
                                             FilterChain chain) throws ServletException, IOException {
                 String path = request.getRequestURI();
-                // CORS preflight request
+
+                // 放行 CORS 预检请求
                 if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
                     chain.doFilter(request, response);
                     return;
                 }
-                // permit all for auth and static resources
+
+                // 放行认证接口和静态资源
                 if (path.startsWith("/api/auth/") || path.startsWith("/h2-console")
                         || path.startsWith("/doc.html") || path.startsWith("/v3/api-docs")
                         || path.startsWith("/swagger-ui")) {
                     chain.doFilter(request, response);
                     return;
                 }
+
+                // 提取并校验 JWT Token
                 String header = request.getHeader("Authorization");
                 if (header != null && header.startsWith("Bearer")) {
                     String token = header.substring(7).trim();
-                    log.debug("JWT filter: path={} token={}...", path, token.substring(0, Math.min(10, token.length())));
+                    log.debug("JWT 过滤器: 路径={}, Token={}...", path,
+                            token.substring(0, Math.min(10, token.length())));
+
                     if (jwtUtil.validate(token)) {
                         String username = jwtUtil.getUsername(token);
-                        log.info("JWT filter: authenticated user={}", username);
+                        log.info("JWT 认证成功: 用户={}", username);
+
                         UsernamePasswordAuthenticationToken auth =
                                 new UsernamePasswordAuthenticationToken(
                                         username, null,
                                         List.of(new SimpleGrantedAuthority("ROLE_USER")));
 
-                        // Critical: save to both SecurityContextHolder AND SecurityContextRepository
+                        // 保存到 SecurityContextHolder 和 SecurityContextRepository
                         SecurityContext context = SecurityContextHolder.createEmptyContext();
                         context.setAuthentication(auth);
                         SecurityContextHolder.setContext(context);
                         securityContextRepository.saveContext(context, request, response);
 
-                        log.debug("JWT filter: auth.isAuthenticated()={}", auth.isAuthenticated());
+                        log.debug("JWT 过滤器: 认证状态={}", auth.isAuthenticated());
                         chain.doFilter(request, response);
                         return;
                     }
-                    log.debug("JWT filter: token invalid");
+                    log.debug("JWT 过滤器: Token 无效");
                 }
+
+                // 未认证或 Token 过期
                 response.setStatus(401);
                 response.setContentType("application/json;charset=UTF-8");
-                response.getWriter().write("{\"code\":401,\"message\":\"not logged in or token expired\"}");
+                response.getWriter().write("{\"code\":401,\"message\":\"未登录或登录已过期\"}");
             }
         };
     }
